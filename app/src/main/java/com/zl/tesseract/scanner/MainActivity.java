@@ -84,10 +84,14 @@ public class MainActivity extends AppCompatActivity {
                             //                                          int[] grantResults)
                             // to handle the case where the user grants the permission. See the documentation
                             // for Activity#requestPermissions for more details.
-                            return;
+                            //return;
                         }
+                        else{
+                            sImei = telephonyManager.getDeviceId();
+                        }
+                    }else {
+                        sImei = telephonyManager.getDeviceId();
                     }
-                    sImei = telephonyManager.getDeviceId();
                 }
                 if (true || !ValidateIMEI(sImei)){
                     txView.setText("");

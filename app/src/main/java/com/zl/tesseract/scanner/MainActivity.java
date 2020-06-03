@@ -44,6 +44,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     sImei = telephonyManager.getDeviceId();
                 }
-                if (!ValidateIMEI(sImei)){
+                if (true || !ValidateIMEI(sImei)){
                     txView.setText("");
                     Intent intent = new Intent()
                             .setType("image/*")
@@ -247,8 +248,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public enum XMLCLASS{
+        ocr_page,
+        ocr_carea,
+        ocr_par,
+        ocr_line,
+        ocrx_word,
+        noneclass,
+    }
     public List<String> parseXml(String sxml){
         List<String> items = new ArrayList<>();
+        XMLCLASS status = XMLCLASS.ocr_page;
+        Stack<XMLCLASS> stack = new Stack<>();
         try {
 
             XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
@@ -258,12 +269,23 @@ public class MainActivity extends AppCompatActivity {
             xpp.setInput( new StringReader( sxml ) ); // pass input whatever xml you have
             int eventType = xpp.getEventType();
             Boolean bFind = false;
+            String sLine = "";
             while (eventType != XmlPullParser.END_DOCUMENT) {
 
                 if(eventType == XmlPullParser.START_DOCUMENT) {
                     Log.d(TAG,"Start document");
                 } else if(eventType == XmlPullParser.START_TAG) {
                     Log.d(TAG,"Start tag "+xpp.getName());
+                    String sclass = xpp.getAttributeValue(null, "class");
+                    if(!TextUtils.isEmpty(sclass)) {
+                        Log.d(TAG, "parseXml: " + sclass);
+                        status = XMLCLASS.valueOf(sclass);
+                    }
+                    else{
+                        status = XMLCLASS.noneclass;
+                    }
+                    stack.push(status);
+
                     if(xpp.getName().equals("em")){
                         bFind = true;
                     }else{
@@ -271,11 +293,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if(eventType == XmlPullParser.END_TAG) {
                     Log.d(TAG,"End tag "+xpp.getName());
+                    status = stack.pop();
+                    if(status == XMLCLASS.ocr_line){
+                        if(!TextUtils.isEmpty(sLine.trim())) {
+                            sLine = sLine.trim();
+                            items.add(sLine);
+                            sLine = "";
+                        }
+                    }
                 } else if(eventType == XmlPullParser.TEXT) {
                     Log.d(TAG,"Text "+xpp.getText()); // here you get the text from xml
                     if(bFind){
+                        sLine+=xpp.getText().replace("\n", "");
                         if(!TextUtils.isEmpty(xpp.getText().trim())) {
-                            items.add(xpp.getText());
+                            //items.add(xpp.getText());
                         }
                     }
                 }
@@ -359,6 +390,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String FindImei(List<String> items){
+        String sImei="";
+        Pattern pimei = Pattern.compile("(IIVIEI|IMEI).*");
+        Boolean bFind = false;
+        Boolean bImei = false;
+        for (String item: items) {
+            Matcher mimei = pimei.matcher(item);
+            if(mimei.matches()){
+                bImei = true;
+            }
+            String ss = item;
+            if(bImei) {
+                ss = ss.replace('i', '1');
+                ss = ss.replace('o', '0');
+                ss = ss.replace('O', '0');
+            }
+            ss = ss.replace(" ","");
+            for(int i = 0; i<=ss.length()-15; i++)
+            {
+                sImei = ss.substring(i, i+15);
+                bFind = ValidateIMEI(sImei);
+                if(bFind){
+                    break;
+                }
+            }
+
+            if(bFind){
+                items.add(sImei);
+                Toast.makeText(this, "IMEI="+sImei, Toast.LENGTH_LONG).show();
+                break;
+            }
+        }
+        return sImei;
+    }
+
+    private String FindImei_V1(List<String> items){
         String sImei="";
         Pattern p = Pattern.compile("\\d{1,15}");
         Pattern pimei = Pattern.compile("IIVIEI|IMEI");

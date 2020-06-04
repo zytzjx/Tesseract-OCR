@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.zl.tesseract.R;
@@ -73,35 +74,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String sImei = "";
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                    TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                            // TODO: Consider calling
-                            //    Activity#requestPermissions
-                            // here to request the missing permissions, and then overriding
-                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                            //                                          int[] grantResults)
-                            // to handle the case where the user grants the permission. See the documentation
-                            // for Activity#requestPermissions for more details.
-                            //return;
-                        }
-                        else{
-                            sImei = telephonyManager.getDeviceId();
-                        }
-                    }else {
-                        sImei = telephonyManager.getDeviceId();
-                    }
-                }
-                if (!ValidateIMEI(sImei)){
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) sImei = ReadIMEI();
+                if (ValidateIMEI(sImei)) {
+                    Toast.makeText(MainActivity.this, "IMEI=" + sImei, Toast.LENGTH_LONG).show();
+                } else {
                     txView.setText("");
                     Intent intent = new Intent()
                             .setType("image/*")
                             .setAction(Intent.ACTION_GET_CONTENT);
 
                     startActivityForResult(Intent.createChooser(intent, "Select Screenshot file"), MY_START_FILE_SELECT);
-                }else{
-                    Toast.makeText(MainActivity.this, "IMEI="+sImei, Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -113,19 +95,19 @@ public class MainActivity extends AppCompatActivity {
                     // Explain to the user why we need to read the contacts
                 }
 
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE},
                         MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
             }
 
-            if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // Should we show an explanation?
-                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
-                    // Explain to the user why we need to read the contacts
-                }
-
-                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},
-                        MY_PERMISSIONS_REQUEST_READ_PHONE_STATUS);
-            }
+//            if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+//                // Should we show an explanation?
+//                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+//                    // Explain to the user why we need to read the contacts
+//                }
+//
+//                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},
+//                        MY_PERMISSIONS_REQUEST_READ_PHONE_STATUS);
+//            }
         }
 
 
@@ -176,7 +158,69 @@ public class MainActivity extends AppCompatActivity {
          */
     }
 
+    private String ReadIMEI(){
+        String sImei="";
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                // Should we show an explanation?
+                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+                    // Explain to the user why we need to read the contacts
+                }
+
+                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},
+                        MY_PERMISSIONS_REQUEST_READ_PHONE_STATUS);
+            } else {
+                sImei = telephonyManager.getDeviceId();
+            }
+        } else {
+            sImei = telephonyManager.getDeviceId();
+        }
+        return sImei;
+    }
+
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[]
+            permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+                if (grantResults.length > 0 && grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    //权限未授予
+                    Toast.makeText(this, "在未授予权限的情况下，程序无法正常工作",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+            break;
+            case MY_PERMISSIONS_REQUEST_READ_PHONE_STATUS: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    String sImei = ReadIMEI();
+                    if (!ValidateIMEI(sImei)) {
+                        txView.setText("");
+                        Intent intent = new Intent()
+                                .setType("image/*")
+                                .setAction(Intent.ACTION_GET_CONTENT);
+
+                        startActivityForResult(Intent.createChooser(intent, "Select Screenshot file"), MY_START_FILE_SELECT);
+                    } else {
+                        Toast.makeText(MainActivity.this, "IMEI=" + sImei, Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    //权限未授予
+                    Toast.makeText(this, "在未授予权限的情况下，程序无法正常工作",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+                break;
+            default:
+                break;
+        }
+    }
+
+   @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         super.onActivityResult(requestCode, resultCode, data);

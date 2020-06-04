@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.zl.tesseract.scanner"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 29
         versionCode 4
         versionName "2.0.0"

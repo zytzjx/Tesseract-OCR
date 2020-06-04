@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                         sImei = telephonyManager.getDeviceId();
                     }
                 }
-                if (true || !ValidateIMEI(sImei)){
+                if (!ValidateIMEI(sImei)){
                     txView.setText("");
                     Intent intent = new Intent()
                             .setType("image/*")

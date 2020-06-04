@@ -2,12 +2,6 @@
 
 Tesseract-OCR-Scanner是基于Tesseract-OCR实现的数字自动识别。
 
-实现效果图
-
-<img src="/preview/1.jpg" width="280px"/> <img src="/preview/2.jpg" width="280px"/>
- <img src="/preview/3.jpg" width="280px"/>
-
-<img src="/preview/4.png" width="320px"/>
 
 ## 实现说明
 
